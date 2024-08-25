@@ -3,7 +3,6 @@ FROM ubuntu:20.04
 
 # Copier les fichiers nécessaires
 COPY kubelet.service /etc/systemd/system/kubelet.service
-COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY daemon.json /etc/docker/daemon.json
 COPY kubelet.env /etc/default/kubelet
 COPY motd /etc/motd
