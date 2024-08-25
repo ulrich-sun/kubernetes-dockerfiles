@@ -1,53 +1,44 @@
-# Utiliser une image de base qui supporte systemd
-FROM ubuntu:20.04
+FROM centos:7
 
-# Supprimer le fichier de configuration existant pour kubelet
-RUN rm -f /etc/default/kubelet
-# Copier les fichiers nécessaires
-COPY kubelet.service /etc/systemd/system/kubelet.service
-COPY daemon.json /etc/docker/daemon.json
-COPY kubelet.env /etc/default/kubelet
+COPY ./systemctl /usr/bin/systemctl
+COPY ./kubernetes.repo /etc/yum.repos.d/
+
+
+
+RUN yum install -y kubectl kubeadm kubelet \
+    #&& mv -f /etc/systemd/system/kubelet.service.d/10-kubeadm.conf /etc/systemd/system/kubelet.service \
+    && yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo \
+    && yum install -y docker-ce git bash-completion \
+    && sed -i -e '4d;5d;8d' /lib/systemd/system/docker.service \
+    && yum clean all
+
+RUN curl -Lf -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 \
+    && curl -Lf -o /usr/bin/docker-compose https://github.com/docker/compose/releases/download/1.21.0/docker-compose-$(uname -s)-$(uname -m) \
+    && chmod +x /usr/bin/jq /usr/bin/docker-compose
+
+
+VOLUME ["/var/lib/kubelet"]
+
+COPY ./kube* /etc/systemd/system/
+COPY ./wrapkubeadm.sh /usr/local/bin/kubeadm
+COPY ./tokens.csv /etc/pki/tokens.csv
+COPY ./daemon.json /etc/docker/
+COPY ./resolv.conf.override /etc/
+COPY ./docker.service /usr/lib/systemd/system/
+COPY ./.bashrc /root/
+
 COPY motd /etc/motd
-COPY resolv.conf.override /etc/resolv.conf.override
-COPY tokens.csv /etc/kubernetes/tokens.csv
-COPY wrapkubeadm.sh /usr/local/bin/wrapkubeadm.sh
-
-# Installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg2 \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
-
-# Ajouter le dépôt Docker
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
-    && add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-
-# Créer le répertoire pour les clés GPG de Kubernetes
-RUN mkdir -p -m 755 /etc/apt/keyrings
-
-# Télécharger la clé GPG de Kubernetes
-RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-
-# Ajouter le dépôt Kubernetes
-RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
 
 
+RUN echo 'source <(kubectl completion bash)' >>~/.bashrc \
+    && kubectl completion bash >> /etc/bash_completion.d/kubectl
 
-# Mettre à jour les dépôts et installer Docker et Kubernetes
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-    docker-ce \
-    kubelet \
-    kubeadm \
-    kubectl \
-    && apt-mark hold kubelet kubeadm kubectl \
-    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /root/.kube && ln -s /etc/kubernetes/admin.conf /root/.kube/config \
+    && rm -f /etc/machine-id
 
-# Rendre le script wrapkubeadm.sh exécutable
-RUN chmod +x /usr/local/bin/wrapkubeadm.sh
+WORKDIR /root
 
-# Activer et démarrer Kubelet
-CMD ["/usr/sbin/init"]
+CMD mount --make-shared / \
+    && systemctl start docker \
+	&& systemctl start kubelet \
+    && while true; do script -q -c "/bin/bash -l" /dev/null; done
