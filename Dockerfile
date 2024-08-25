@@ -6,7 +6,7 @@ RUN yum -y update
 COPY ./systemctl /usr/bin/systemctl
 COPY ./kubernetes.repo /etc/yum.repos.d/
 
-
+RUN yum -y update
 
 RUN yum install -y kubectl kubeadm kubelet \
     #&& mv -f /etc/systemd/system/kubelet.service.d/10-kubeadm.conf /etc/systemd/system/kubelet.service \
