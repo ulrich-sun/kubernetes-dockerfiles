@@ -1,6 +1,8 @@
 # Utiliser une image de base qui supporte systemd
 FROM ubuntu:20.04
 
+COPY kubelet.service /etc/systemd/system/kubelet.service
+COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 # Installer les dépendances nécessaires
 RUN apt-get update && apt-get install -y \
     apt-transport-https \
@@ -20,8 +22,7 @@ RUN apt-get update && apt-get install -y \
 # Copier les fichiers de configuration
 COPY daemon.json /etc/docker/daemon.json
 COPY kubelet.env /etc/default/kubelet
-COPY kubelet.service /etc/systemd/system/kubelet.service
-COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+
 COPY motd /etc/motd
 COPY resolv.conf.override /etc/resolv.conf.override
 COPY tokens.csv /etc/kubernetes/tokens.csv
