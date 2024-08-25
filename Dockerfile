@@ -19,7 +19,12 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     software-properties-common
 
-# Créer le répertoire pour les clés GPG
+# Ajouter le dépôt Docker
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+RUN add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Créer le répertoire pour les clés GPG de Kubernetes
 RUN mkdir -p -m 755 /etc/apt/keyrings
 
 # Télécharger la clé GPG de Kubernetes
@@ -30,7 +35,7 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://p
 
 # Mettre à jour les dépôts et installer Docker et Kubernetes
 RUN apt-get update && apt-get install -y \
-    docker-ce-19.03.15 git \
+    docker-ce \
     kubelet \
     kubeadm \
     kubectl \
