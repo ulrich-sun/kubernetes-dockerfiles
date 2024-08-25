@@ -1,34 +1,42 @@
 # Utiliser une image de base qui supporte systemd
 FROM ubuntu:20.04
 
+# Copier les fichiers nécessaires
 COPY kubelet.service /etc/systemd/system/kubelet.service
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
-# Installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    software-properties-common \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
-    && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
-    && apt-get update \
-    && apt-get install -y docker-ce \
-    && apt-get install -y \
-    kubelet=1.30.0-00 \
-    kubeadm=1.30.0-00 \
-    kubectl=1.30.0-00 \
-    && apt-mark hold kubelet kubeadm kubectl
-
-# Copier les fichiers de configuration
 COPY daemon.json /etc/docker/daemon.json
 COPY kubelet.env /etc/default/kubelet
-
 COPY motd /etc/motd
 COPY resolv.conf.override /etc/resolv.conf.override
 COPY tokens.csv /etc/kubernetes/tokens.csv
 COPY wrapkubeadm.sh /usr/local/bin/wrapkubeadm.sh
 
-# Rendre le script exécutable
+# Installer les dépendances nécessaires
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    software-properties-common
+
+# Créer le répertoire pour les clés GPG
+RUN mkdir -p -m 755 /etc/apt/keyrings
+
+# Télécharger la clé GPG de Kubernetes
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Ajouter le dépôt Kubernetes
+RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
+
+# Mettre à jour les dépôts et installer Docker et Kubernetes
+RUN apt-get update && apt-get install -y \
+    docker-ce \
+    kubelet=1.30.0-00 \
+    kubeadm=1.30.0-00 \
+    kubectl=1.30.0-00 \
+    && apt-mark hold kubelet kubeadm kubectl
+
+# Rendre le script wrapkubeadm.sh exécutable
 RUN chmod +x /usr/local/bin/wrapkubeadm.sh
 
 # Activer et démarrer Kubelet
