@@ -30,7 +30,7 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://p
 
 # Mettre à jour les dépôts et installer Docker et Kubernetes
 RUN apt-get update && apt-get install -y \
-    docker-ce \
+    docker-ce-19.03.15 git \
     kubelet \
     kubeadm \
     kubectl \
