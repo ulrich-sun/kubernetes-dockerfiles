@@ -16,11 +16,12 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     gnupg2 \
-    software-properties-common
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
 
 # Ajouter le dépôt Docker
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-RUN add-apt-repository \
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
+    && add-apt-repository \
     "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
 # Créer le répertoire pour les clés GPG de Kubernetes
@@ -38,7 +39,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     kubelet \
     kubeadm \
     kubectl \
-    && apt-mark hold kubelet kubeadm kubectl
+    && apt-mark hold kubelet kubeadm kubectl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Rendre le script wrapkubeadm.sh exécutable
 RUN chmod +x /usr/local/bin/wrapkubeadm.sh
