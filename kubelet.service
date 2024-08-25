@@ -1,0 +1,12 @@
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=https://kubernetes.io/docs/
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/kubelet $KUBELET_EXTRA_ARGS
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
