@@ -31,9 +31,9 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://p
 # Mettre à jour les dépôts et installer Docker et Kubernetes
 RUN apt-get update && apt-get install -y \
     docker-ce \
-    kubelet=1.30.0-00 \
-    kubeadm=1.30.0-00 \
-    kubectl=1.30.0-00 \
+    kubelet \
+    kubeadm \
+    kubectl \
     && apt-mark hold kubelet kubeadm kubectl
 
 # Rendre le script wrapkubeadm.sh exécutable
